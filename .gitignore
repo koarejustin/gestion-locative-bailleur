@@ -1,0 +1,23 @@
+# Dépendances (réinstallées avec "npm install" à partir de package.json)
+node_modules/
+
+# Secrets locaux — jamais dans le dépôt (voir backend/.env.example pour la liste des clés)
+.env
+.env.local
+
+# Fichiers générés
+dist/
+dist-ssr/
+*.log
+npm-debug.log*
+
+# Photos envoyées par les utilisateurs (biens, chambres, locataires, bailleur) —
+# stockées sur le disque du serveur, pas dans le code
+backend/uploads/
+
+# Éditeurs / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
