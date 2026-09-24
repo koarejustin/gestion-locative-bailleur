@@ -4,7 +4,7 @@ import api from "../../api/client.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import ConfirmerModal from "../ui/ConfirmerModal.jsx";
 
-export default function Topbar({ titre }) {
+export default function Topbar({ titre, onOuvrirMenu }) {
   const { bailleur, deconnecter, mettreAJourBailleur } = useAuth();
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
@@ -56,7 +56,24 @@ export default function Topbar({ titre }) {
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur px-4 md:px-8 py-4">
-      <h1 className="text-lg md:text-xl font-semibold text-slate-800">{titre}</h1>
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          type="button"
+          onClick={onOuvrirMenu}
+          className="md:hidden -ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+          aria-label="Ouvrir le menu"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M4 6h16M4 12h16M4 18h16"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+        <h1 className="text-lg md:text-xl font-semibold text-slate-800 truncate">{titre}</h1>
+      </div>
       <div className="relative">
         <div className="flex items-center gap-2">
           <div className="relative shrink-0 group">

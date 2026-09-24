@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { styleBoutonSecondaire } from "../components/ui/Champ.jsx";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
@@ -89,18 +88,6 @@ export default function Dashboard() {
   }, []);
 
   const prenom = bailleur?.nom_complet?.split(" ")[0] || "";
-  const lienVitrine = `${window.location.origin}/louer`;
-  const [lienCopie, setLienCopie] = useState(false);
-
-  function copierLienVitrine() {
-    navigator.clipboard
-      ?.writeText(lienVitrine)
-      .then(() => {
-        setLienCopie(true);
-        setTimeout(() => setLienCopie(false), 2000);
-      })
-      .catch(() => {});
-  }
 
   return (
     <div className="space-y-6">
@@ -184,26 +171,6 @@ export default function Dashboard() {
           onClick={() => navigate("/paiements")}
         />
       </div>
-
-      <Card>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <p className="text-sm font-medium text-slate-700">Vitrine publique</p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Partage ce lien aux prospects — ils y consultent les biens libres, candidatent et signent leur
-              contrat directement en ligne.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={copierLienVitrine} className={styleBoutonSecondaire}>
-              {lienCopie ? "Copié !" : "Copier le lien"}
-            </button>
-            <a href="/louer" target="_blank" rel="noopener" className={styleBoutonSecondaire}>
-              Ouvrir
-            </a>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
