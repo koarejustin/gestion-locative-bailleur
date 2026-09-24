@@ -24,7 +24,11 @@ async function run() {
     process.exit(1);
   }
 
-  const client = new Client({ connectionString: adminUrl });
+  const estLocal = /localhost|127\.0\.0\.1/.test(adminUrl);
+  const client = new Client({
+    connectionString: adminUrl,
+    ssl: estLocal ? false : { rejectUnauthorized: false },
+  });
   await client.connect();
 
   const { rows } = await client.query("SELECT 1 FROM pg_database WHERE datname = $1", [dbName]);

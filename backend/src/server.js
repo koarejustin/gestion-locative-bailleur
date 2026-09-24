@@ -1,4 +1,6 @@
 require("dotenv").config();
+const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 const pool = require("./config/db");
@@ -32,6 +34,21 @@ app.use("/api/location", authentifier, locationRoutes);
 app.use("/api/paiements", authentifier, paiementsRoutes);
 app.use("/api/espace-locataire", authentifier.authentifierLocataire, espaceLocataireRoutes);
 app.use("/api/public", publicRoutes);
+
+// En production (Render), le frontend construit (frontend/dist) est servi
+// directement par ce même serveur : une seule URL, pas de souci de CORS
+// entre deux domaines différents. En développement, ce dossier n'existe
+// pas encore (le frontend tourne séparément avec "npm run dev" sur le port
+// 5173) donc ce bloc est simplement ignoré.
+const dossierFrontend = path.join(__dirname, "../../frontend/dist");
+if (fs.existsSync(dossierFrontend)) {
+  app.use(express.static(dossierFrontend));
+  // Toute autre route (hors /api et /uploads) renvoie index.html, pour que
+  // le routeur React (react-router) gère la navigation côté client.
+  app.get(/^\/(?!api|uploads).*/, (req, res) => {
+    res.sendFile(path.join(dossierFrontend, "index.html"));
+  });
+}
 
 // Filet de sécurité : une erreur d'upload (photo trop lourde, mauvais format...)
 // doit renvoyer du JSON comme le reste de l'API, pas une page d'erreur HTML.
