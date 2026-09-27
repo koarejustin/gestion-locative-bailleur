@@ -1024,11 +1024,11 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
           onChange={setEquipements}
         />
       </ChampEquipements>
-      <Champ label="Photo(s) de la maison/cour (optionnel)">
-        {initial ? (
+      {initial && (
+        <Champ label="Photo(s) de la maison/cour (optionnel)">
           <PhotosMaison maisonId={initial.id} photos={photos} onPhotosMaj={mettreAJourPhotos} />
-        ) : null}
-      </Champ>
+        </Champ>
+      )}
       {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}
       <div className="flex justify-end gap-2 mt-4">
         <button type="button" className={styleBoutonSecondaire} onClick={onAnnuler}>
