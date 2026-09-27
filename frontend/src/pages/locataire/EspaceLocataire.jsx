@@ -29,9 +29,15 @@ const METHODE_LABEL = {
 };
 const METHODE_ICONE = { especes: "💵", orange_money: "🟠", moov_money: "🔵", wave: "🌊" };
 const METHODES_MOBILE_MONEY = ["orange_money", "moov_money", "wave"];
+const ICONE_UNITE = { cour: "🏡", batiment: "🏢" };
 
 function formaterFcfa(montant) {
   return `${Number(montant).toLocaleString("fr-FR")} FCFA`;
+}
+
+function iconeUnite(unite) {
+  if (unite.maison.usage_bien === "commerce") return "🏪";
+  return ICONE_UNITE[unite.maison.type_bien] || "🏠";
 }
 
 function formaterDate(iso) {
@@ -58,6 +64,11 @@ export default function EspaceLocataire() {
   const [historique, setHistorique] = useState(null);
   const [erreur, setErreur] = useState("");
   const [modalPaiementOuvert, setModalPaiementOuvert] = useState(false);
+
+  const [unitesDisponibles, setUnitesDisponibles] = useState([]);
+  const [chargementUnites, setChargementUnites] = useState(false);
+  const [erreurUnites, setErreurUnites] = useState("");
+  const [uniteChoisie, setUniteChoisie] = useState(null);
 
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoEnCours, setPhotoEnCours] = useState(false);
@@ -87,6 +98,29 @@ export default function EspaceLocataire() {
 
   useEffect(() => {
     if (donnees?.locataire) setPhotoUrl(donnees.locataire.photo_url || null);
+  }, [donnees]);
+
+  // Pas encore de logement associé : on propose de consulter les unités
+  // libres directement depuis l'espace locataire, plutôt que de laisser
+  // l'écran vide.
+  useEffect(() => {
+    if (!donnees || donnees.contrat) return;
+    let annule = false;
+    setChargementUnites(true);
+    api
+      .get("/public/biens-disponibles")
+      .then(({ data }) => {
+        if (!annule) setUnitesDisponibles(data.unites);
+      })
+      .catch(() => {
+        if (!annule) setErreurUnites("Impossible de charger les logements disponibles pour le moment.");
+      })
+      .finally(() => {
+        if (!annule) setChargementUnites(false);
+      });
+    return () => {
+      annule = true;
+    };
   }, [donnees]);
 
   function seDeconnecter() {
@@ -198,12 +232,64 @@ export default function EspaceLocataire() {
         {!donnees && !erreur && <p className="text-sm text-slate-500">Chargement...</p>}
 
         {donnees && !contrat && (
-          <Card>
-            <p className="text-sm text-slate-600">
-              Aucun logement associé à ton compte pour le moment. Contacte ton bailleur si ça te semble
-              anormal.
-            </p>
-          </Card>
+          <>
+            <Card>
+              <p className="text-sm font-medium text-slate-700 mb-1">Pas encore de logement</p>
+              <p className="text-sm text-slate-600">
+                Choisis une unité libre ci-dessous pour la louer directement. Au moment de signer, une
+                caution (généralement un mois de loyer) est demandée en plus du premier loyer.
+              </p>
+            </Card>
+
+            {erreurUnites && (
+              <Card className="border-rose-200 bg-rose-50">
+                <p className="text-sm text-rose-700">{erreurUnites}</p>
+              </Card>
+            )}
+
+            {chargementUnites && <p className="text-sm text-slate-500">Chargement des logements disponibles...</p>}
+
+            {!chargementUnites && !erreurUnites && unitesDisponibles.length === 0 && (
+              <Card>
+                <p className="text-sm text-slate-500">Rien de disponible pour l'instant.</p>
+              </Card>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {unitesDisponibles.map((unite) => (
+                <button
+                  key={unite.chambre.id}
+                  onClick={() => setUniteChoisie(unite)}
+                  className="text-left rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                >
+                  {unite.photos[0] ? (
+                    <img src={unite.photos[0].url} alt={unite.maison.nom} className="h-32 w-full object-cover" />
+                  ) : (
+                    <div className="h-32 w-full flex items-center justify-center bg-slate-100 text-4xl">
+                      {iconeUnite(unite)}
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-medium text-slate-800">{unite.maison.nom}</p>
+                      {unite.maison.usage_bien === "commerce" && <Badge type="attention">Commerce</Badge>}
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {unite.maison.usage_bien === "commerce" ? "Boutique" : "Porte"} {unite.chambre.numero_porte} ·{" "}
+                      {unite.quartier.nom}
+                    </p>
+                    {unite.chambre.description && (
+                      <p className="text-xs text-slate-500 mt-2 line-clamp-2">{unite.chambre.description}</p>
+                    )}
+                    <p className="text-base font-semibold text-[#1F3A5F] mt-3">
+                      {formaterFcfa(unite.chambre.prix_mensuel)}
+                      <span className="text-xs font-normal text-slate-400">/mois</span>
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         {contrat && (
@@ -351,6 +437,17 @@ export default function EspaceLocataire() {
         />
       )}
 
+      {uniteChoisie && (
+        <SignerModal
+          unite={uniteChoisie}
+          onFermer={() => setUniteChoisie(null)}
+          onSigne={() => {
+            setUniteChoisie(null);
+            charger().catch(() => {});
+          }}
+        />
+      )}
+
       <ConfirmerModal
         ouvert={confirmerRetraitPhoto}
         titre="Retirer ma photo"
@@ -465,6 +562,80 @@ function DeclarerPaiementModal({ onFermer, onEnregistre }) {
           </div>
         </form>
       )}
+    </Modal>
+  );
+}
+
+// Signature depuis l'espace locataire : le compte existe déjà (créé à la
+// main par le bailleur), donc pas besoin de redemander une identité ou un
+// mot de passe — juste confirmer l'unité et accepter les conditions. Le
+// contrat est créé directement sur ce locataire_id existant.
+function SignerModal({ unite, onFermer, onSigne }) {
+  const [accepteConditions, setAccepteConditions] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState("");
+
+  async function soumettre(e) {
+    e.preventDefault();
+    setErreur("");
+    setEnCours(true);
+    try {
+      await api.post("/espace-locataire/candidater", {
+        chambre_id: unite.chambre.id,
+        accepte_conditions: accepteConditions,
+      });
+      onSigne();
+    } catch (err) {
+      setErreur(err.response?.data?.error || "Une erreur est survenue.");
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  return (
+    <Modal ouvert={true} onFermer={onFermer} titre="Signer ce contrat">
+      <form onSubmit={soumettre}>
+        <div className="rounded-lg border border-slate-200 p-3 mb-4 text-sm">
+          <p className="font-medium text-slate-800">
+            {unite.maison.usage_bien === "commerce" ? "Boutique" : "Porte"} {unite.chambre.numero_porte} —{" "}
+            {unite.maison.nom}
+          </p>
+          <p className="text-slate-500">{unite.quartier.nom}</p>
+          <div className="flex justify-between mt-2 text-slate-600">
+            <span>Loyer mensuel</span>
+            <span className="font-medium text-slate-800">{formaterFcfa(unite.chambre.prix_mensuel)}</span>
+          </div>
+          <div className="flex justify-between text-slate-600">
+            <span>Caution (à la signature)</span>
+            <span className="font-medium text-slate-800">{formaterFcfa(unite.chambre.prix_mensuel)}</span>
+          </div>
+        </div>
+
+        <label className="flex items-start gap-2 text-xs text-slate-600 mb-3">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={accepteConditions}
+            onChange={(e) => setAccepteConditions(e.target.checked)}
+            required
+          />
+          <span>
+            Je confirme avoir vérifié les informations ci-dessus et j'accepte de signer ce contrat de location
+            électroniquement.
+          </span>
+        </label>
+
+        {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}
+
+        <div className="flex justify-end gap-2 mt-1">
+          <button type="button" className={styleBoutonSecondaire} onClick={onFermer}>
+            Annuler
+          </button>
+          <button type="submit" className={styleBoutonPrimaire} disabled={enCours}>
+            {enCours ? "Signature..." : "Signer le contrat"}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

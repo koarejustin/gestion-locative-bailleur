@@ -200,6 +200,92 @@ router.post("/declarer-paiement", async (req, res) => {
   }
 });
 
+// --- Candidater sur une unité libre depuis son propre espace ---
+// Pour un locataire qui a déjà un compte (créé à la main par le bailleur,
+// avec un code d'accès) mais pas encore de logement : il choisit une unité
+// parmi celles publiées sur /public/biens-disponibles et signe directement,
+// sans repasser par la création de compte/mot de passe de la candidature
+// publique (il en a déjà un). Ça crée le contrat sur son locataire_id
+// existant — jamais un second compte locataire.
+
+router.post("/candidater", async (req, res) => {
+  const { chambre_id, accepte_conditions, date_debut_souhaitee } = req.body;
+
+  if (!chambre_id) {
+    return res.status(400).json({ ok: false, error: "Unité obligatoire." });
+  }
+  if (accepte_conditions !== true) {
+    return res.status(400).json({ ok: false, error: "Merci d'accepter les conditions du contrat pour signer." });
+  }
+
+  const contratExistant = await trouverContratDuLocataire(req.locataireId);
+  if (contratExistant && contratExistant.actif) {
+    return res.status(409).json({ ok: false, error: "Tu as déjà un contrat actif — impossible d'en signer un second." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const rChambre = await client.query(
+      `SELECT c.id, c.statut, c.prix_mensuel, m.bailleur_id,
+              m.nom AS maison_nom, c.numero_porte, q.nom AS quartier_nom
+       FROM biens.chambres c
+       JOIN biens.maisons_cours m ON m.id = c.maison_id
+       JOIN biens.quartiers q ON q.id = m.quartier_id
+       WHERE c.id = $1
+       FOR UPDATE`,
+      [chambre_id]
+    );
+    const chambre = rChambre.rows[0];
+    if (!chambre || chambre.statut !== "libre") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ ok: false, error: "Cette unité vient d'être prise — choisis-en une autre." });
+    }
+
+    const rLocataire = await client.query(
+      `SELECT bailleur_id FROM location.locataires WHERE id = $1`,
+      [req.locataireId]
+    );
+    if (!rLocataire.rows[0] || rLocataire.rows[0].bailleur_id !== chambre.bailleur_id) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ ok: false, error: "Cette unité n'appartient pas à ton bailleur." });
+    }
+
+    // Caution par défaut : un mois de loyer, comme pour la candidature
+    // publique — le bailleur peut toujours l'ajuster ensuite.
+    const cautionMontant = Number(chambre.prix_mensuel);
+    const dateDebut = date_debut_souhaitee || new Date().toISOString().slice(0, 10);
+
+    const rContrat = await client.query(
+      `INSERT INTO location.contrats (chambre_id, locataire_id, loyer_mensuel, caution_montant, date_debut)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [chambre_id, req.locataireId, chambre.prix_mensuel, cautionMontant, dateDebut]
+    );
+
+    await client.query(`UPDATE biens.chambres SET statut = 'occupee' WHERE id = $1`, [chambre_id]);
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      ok: true,
+      contrat_id: rContrat.rows[0].id,
+      recap: {
+        maison_nom: chambre.maison_nom,
+        numero_porte: chambre.numero_porte,
+        quartier_nom: chambre.quartier_nom,
+        loyer_mensuel: Number(chambre.prix_mensuel),
+        caution_montant: cautionMontant,
+      },
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    res.status(500).json({ ok: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // --- Photo de profil du locataire (remplace l'icône générique côté bailleur) ---
 
 router.post("/ma-photo", upload.single("photo"), async (req, res) => {
