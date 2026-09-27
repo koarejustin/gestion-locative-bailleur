@@ -295,27 +295,6 @@ export default function Biens() {
         </button>
       </div>
 
-      <Card className="bg-slate-50 border-slate-200">
-        <p className="text-sm text-slate-600">
-          <strong>Comment c'est organisé :</strong> un <strong>quartier</strong> contient une ou
-          plusieurs <strong>maisons/cours</strong>. Deux cas selon la <strong>disposition</strong>{" "}
-          choisie :
-        </p>
-        <ul className="text-sm text-slate-600 mt-2 space-y-1 list-disc list-inside">
-          <li>
-            <strong>Divisée</strong> (une cour ou un bâtiment loué par portes) : chaque maison/cour
-            contient plusieurs <strong>chambres ou boutiques</strong> (les unités qu'on loue), à
-            créer une par une. Exemple : <em>Gampela</em> (quartier) → <em>Cour Zongo</em>{" "}
-            (maison/cour) → <em>Porte A1, Porte A2...</em> (chambres).
-          </li>
-          <li>
-            <strong>Unique</strong> (ex. une villa entière louée à un seul locataire) : pas besoin
-            de créer de chambre — une seule photo et un seul prix suffisent, l'unité est créée
-            automatiquement.
-          </li>
-        </ul>
-      </Card>
-
       {quartiers.length === 0 && !erreur && (
         <Card>
           <p className="text-sm text-slate-500">

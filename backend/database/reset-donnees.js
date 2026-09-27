@@ -43,7 +43,10 @@ function viderDossierUploads() {
   if (!fs.existsSync(DOSSIER_UPLOADS)) return;
   for (const fichier of fs.readdirSync(DOSSIER_UPLOADS)) {
     if (fichier === ".gitkeep") continue;
-    fs.unlinkSync(path.join(DOSSIER_UPLOADS, fichier));
+    // rmSync gère aussi bien un fichier qu'un sous-dossier (ex. uploads/recus/,
+    // créé automatiquement par le serveur pour les reçus PDF) — unlinkSync
+    // plantait sur un dossier avec une erreur EPERM/EISDIR.
+    fs.rmSync(path.join(DOSSIER_UPLOADS, fichier), { recursive: true, force: true });
   }
 }
 

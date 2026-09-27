@@ -24,7 +24,22 @@ function genererMotDePasseTemporaire() {
   return motDePasse;
 }
 
-// Création du compte bailleur (une seule fois normalement, pour démarrer l'app)
+// Cette application est prévue pour un seul bailleur par déploiement (pas
+// multi-tenant) : une fois qu'un compte existe, l'inscription publique est
+// fermée. Sans ça, n'importe qui tombant sur le site pouvait se créer un
+// compte bailleur avec accès complet, et le vrai bailleur pouvait finir
+// avec plusieurs comptes séparés (chacun avec ses propres biens, isolés
+// les uns des autres) sans s'en rendre compte.
+router.get("/existe-bailleur", async (req, res) => {
+  try {
+    const r = await pool.query(`SELECT EXISTS(SELECT 1 FROM comptes.bailleurs) AS existe`);
+    res.json({ ok: true, existe: r.rows[0].existe });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Création du compte bailleur (une seule fois : la toute première utilisation de l'app)
 router.post("/inscription", async (req, res) => {
   const { nom_complet, telephone, email, mot_de_passe } = req.body;
 
@@ -42,6 +57,14 @@ router.post("/inscription", async (req, res) => {
   }
 
   try {
+    const dejaUnCompte = await pool.query(`SELECT EXISTS(SELECT 1 FROM comptes.bailleurs) AS existe`);
+    if (dejaUnCompte.rows[0].existe) {
+      return res.status(409).json({
+        ok: false,
+        error: "Un compte bailleur existe déjà pour cette application. Connecte-toi avec ce compte au lieu d'en créer un nouveau.",
+      });
+    }
+
     const hash = await bcrypt.hash(mot_de_passe, 10);
     const resultat = await pool.query(
       `INSERT INTO comptes.bailleurs (nom_complet, telephone, email, mot_de_passe_hash)

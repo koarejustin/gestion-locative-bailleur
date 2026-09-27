@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/client.js";
@@ -32,9 +32,35 @@ export default function Connexion() {
   const [motDePasse, setMotDePasse] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState("");
+  // Cette appli est pensée pour un seul bailleur : une fois qu'un compte
+  // existe déjà, on cache complètement l'onglet "Créer un compte" pour
+  // éviter qu'on finisse avec deux comptes séparés (et deux jeux de biens
+  // isolés l'un de l'autre) sans le vouloir.
+  const [compteExiste, setCompteExiste] = useState(true);
 
   const { connecter } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let annule = false;
+    api
+      .get("/auth/existe-bailleur")
+      .then(({ data }) => {
+        if (!annule) setCompteExiste(Boolean(data.existe));
+      })
+      .catch(() => {
+        // En cas de doute (ex. serveur pas encore réveillé), on reste prudent
+        // et on garde l'onglet "Créer un compte" caché plutôt que de risquer
+        // un deuxième compte.
+      });
+    return () => {
+      annule = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (compteExiste && mode === "inscription") setMode("connexion");
+  }, [compteExiste, mode]);
 
   async function soumettre(e) {
     e.preventDefault();
@@ -116,6 +142,7 @@ export default function Connexion() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.15 }}
         >
+          {!compteExiste && (
           <div className="relative flex mb-5 rounded-lg bg-slate-100 p-1 text-sm">
             {["connexion", "inscription"].map((valeur) => (
               <button
@@ -138,6 +165,7 @@ export default function Connexion() {
               </button>
             ))}
           </div>
+          )}
 
           <motion.form layout onSubmit={soumettre} transition={{ duration: 0.25, ease: "easeInOut" }}>
             <AnimatePresence initial={false}>
