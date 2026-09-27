@@ -421,9 +421,6 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
             onChange={(e) => setPieceIdentite(e.target.value)}
             autoComplete="new-password"
           />
-          <p className="text-xs text-slate-400 mt-1">
-            Une lettre suivie de 8 chiffres, comme imprimé sur la carte CNIB.
-          </p>
         </Champ>
         {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}
         <div className="flex justify-end gap-2 mt-2">

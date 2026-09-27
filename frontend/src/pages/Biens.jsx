@@ -949,10 +949,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-400 mt-1">
-            Cour = concession au sol, une ou plusieurs chambres autour d'une cour. Bâtiment =
-            immeuble à un ou plusieurs étages.
-          </p>
         </Champ>
         <Champ label="Usage">
           <select className={styleEntree} value={usageBien} onChange={(e) => setUsageBien(e.target.value)}>
@@ -962,9 +958,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-400 mt-1">
-            Commerce affiche "boutique" au lieu de "chambre" partout sur cette maison/cour.
-          </p>
         </Champ>
       </div>
       <Champ label="Disposition">
@@ -979,11 +972,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
             </option>
           ))}
         </select>
-        <p className="text-xs text-slate-400 mt-1">
-          Unique = un seul locataire pour toute la maison/cour (ex. une villa entière).
-          Divisée = plusieurs chambres/boutiques séparées, chacune avec son propre locataire.
-          Ex : une rangée de boutiques en bordure de route = Bâtiment + Commerce + Divisée.
-        </p>
       </Champ>
       {demanderPrixUnique && (
         <Champ label="Prix mensuel (FCFA)">
@@ -995,11 +983,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
             onChange={(e) => setPrixMensuel(e.target.value)}
             required
           />
-          <p className="text-xs text-slate-400 mt-1">
-            Comme c'est "Unique", la chambre correspondant à toute la maison/cour est créée
-            automatiquement avec ce prix — tu pourras créer un contrat directement dessus, sans
-            étape supplémentaire.
-          </p>
         </Champ>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -1015,10 +998,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-400 mt-1">
-            Juste pour décrire le bâti — n'affecte rien d'autre. Laisse "Aucun" si ça ne s'applique
-            pas (ex. une cour).
-          </p>
         </Champ>
         <Champ label="Nombre d'étages (optionnel)">
           <input
@@ -1047,18 +1026,8 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
       </ChampEquipements>
       <Champ label="Photo(s) de la maison/cour (optionnel)">
         {initial ? (
-          <>
-            <PhotosMaison maisonId={initial.id} photos={photos} onPhotosMaj={mettreAJourPhotos} />
-            <p className="text-xs text-slate-400 mt-1">
-              Une photo ajoutée ici s'ajoute tout de suite, même sans cliquer sur "Enregistrer". La
-              première photo devient la photo de couverture affichée sur la carte.
-            </p>
-          </>
-        ) : (
-          <p className="text-xs text-slate-400">
-            Enregistre d'abord la maison/cour, puis reviens la modifier pour lui ajouter une photo.
-          </p>
-        )}
+          <PhotosMaison maisonId={initial.id} photos={photos} onPhotosMaj={mettreAJourPhotos} />
+        ) : null}
       </Champ>
       {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}
       <div className="flex justify-end gap-2 mt-4">
@@ -1141,9 +1110,6 @@ function ChambreForm({ maisonId, usageBien, initial, onAnnuler, onEnregistre }) 
             value={nombreChambres}
             onChange={(e) => setNombreChambres(e.target.value)}
           />
-          <p className="text-xs text-slate-400 mt-1">
-            Pièces à coucher dans cette porte — utile si ce n'est pas une simple chambre nue.
-          </p>
         </Champ>
         <Champ label="Étage (optionnel)">
           <input
@@ -1242,11 +1208,6 @@ function LotChambresForm({ maisonId, usageBien, onAnnuler, onEnregistre }) {
 
   return (
     <form onSubmit={soumettre}>
-      <p className="text-xs text-slate-500 mb-3">
-        Crée plusieurs {estCommerce ? "boutiques" : "portes"} numérotées automatiquement, avec le
-        même prix et le même détail de départ — tu pourras ensuite ajuster chacune individuellement
-        (photo, prix différent, statut...).
-      </p>
       <div className="grid grid-cols-3 gap-3">
         <Champ label="Préfixe">
           <input
