@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
 import { AuthProviderLocataire, useAuthLocataire } from "./auth/AuthContextLocataire.jsx";
 import Layout from "./components/layout/Layout.jsx";
+import SelectionEspace from "./pages/SelectionEspace.jsx";
 import Connexion from "./pages/Connexion.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Biens from "./pages/Biens.jsx";
@@ -41,6 +42,27 @@ function RouteProtegeeLocataire({ children }) {
   return children;
 }
 
+// Racine du site : ni le bailleur ni un locataire ne sont censés atterrir
+// directement sur le formulaire de connexion de l'autre — on demande
+// d'abord quel espace ouvrir. Si l'un des deux est déjà connecté, on saute
+// directement dans son espace.
+function Racine() {
+  const { bailleur } = useAuth();
+  const { locataire } = useAuthLocataire();
+
+  if (bailleur) {
+    return (
+      <Page chemin="/">
+        <Dashboard />
+      </Page>
+    );
+  }
+  if (locataire) {
+    return <Navigate to="/locataire" replace />;
+  }
+  return <SelectionEspace />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -48,16 +70,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/connexion" element={<Connexion />} />
-            <Route
-              path="/"
-              element={
-                <RouteProtegee>
-                  <Page chemin="/">
-                    <Dashboard />
-                  </Page>
-                </RouteProtegee>
-              }
-            />
+            <Route path="/" element={<Racine />} />
             <Route
               path="/biens"
               element={
