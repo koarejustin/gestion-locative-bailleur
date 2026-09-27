@@ -1,11 +1,10 @@
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const pool = require("../config/db");
 const authentifier = require("../middleware/auth");
 const { genererJetonBailleur, genererJetonLocataire } = require("../services/jetons");
-const { upload, dossierUploads } = require("../middleware/upload");
+const { upload } = require("../middleware/upload");
+const { televerserPhoto, supprimerPhoto } = require("../services/stockage");
 
 const router = express.Router();
 
@@ -209,16 +208,13 @@ router.post("/ma-photo", authentifier, upload.single("photo"), async (req, res) 
       `SELECT photo_url FROM comptes.bailleurs WHERE id = $1`,
       [req.bailleurId]
     );
-    const url = `/uploads/${req.file.filename}`;
+    const url = await televerserPhoto(req.file);
     await pool.query(`UPDATE comptes.bailleurs SET photo_url = $1 WHERE id = $2`, [
       url,
       req.bailleurId,
     ]);
     const ancienUrl = ancien.rows[0]?.photo_url;
-    if (ancienUrl) {
-      // Best-effort : si le fichier a déjà disparu du disque, ce n'est pas grave.
-      fs.unlink(path.join(dossierUploads, path.basename(ancienUrl)), () => {});
-    }
+    if (ancienUrl) supprimerPhoto(ancienUrl).catch(() => {});
     res.status(201).json({ ok: true, photo_url: url });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -237,7 +233,7 @@ router.delete("/ma-photo", authentifier, async (req, res) => {
     await pool.query(`UPDATE comptes.bailleurs SET photo_url = NULL WHERE id = $1`, [
       req.bailleurId,
     ]);
-    fs.unlink(path.join(dossierUploads, path.basename(url)), () => {});
+    supprimerPhoto(url).catch(() => {});
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

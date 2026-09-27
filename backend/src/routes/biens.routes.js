@@ -1,8 +1,7 @@
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
 const pool = require("../config/db");
-const { upload, dossierUploads } = require("../middleware/upload");
+const { upload } = require("../middleware/upload");
+const { televerserPhoto, supprimerPhoto } = require("../services/stockage");
 const { premierJourDuMois, obtenirOuCreerEcheance } = require("../services/echeances");
 
 const router = express.Router();
@@ -465,7 +464,7 @@ router.post("/maisons/:id/photos", upload.array("photos", 8), async (req, res) =
   try {
     const photos = [];
     for (const fichier of req.files) {
-      const url = `/uploads/${fichier.filename}`;
+      const url = await televerserPhoto(fichier);
       const r = await pool.query(
         `INSERT INTO biens.photos_maison (maison_id, url) VALUES ($1, $2) RETURNING id, url`,
         [req.params.id, url]
@@ -491,8 +490,7 @@ router.delete("/photos-maison/:photoId", async (req, res) => {
     if (!photo) return res.status(404).json({ ok: false, error: "Photo introuvable." });
 
     await pool.query(`DELETE FROM biens.photos_maison WHERE id = $1`, [photo.id]);
-    // Best-effort : si le fichier a déjà disparu du disque, ce n'est pas grave.
-    fs.unlink(path.join(dossierUploads, path.basename(photo.url)), () => {});
+    supprimerPhoto(photo.url).catch(() => {});
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -706,7 +704,7 @@ router.post("/chambres/:id/photos", upload.array("photos", 8), async (req, res) 
   try {
     const photos = [];
     for (const fichier of req.files) {
-      const url = `/uploads/${fichier.filename}`;
+      const url = await televerserPhoto(fichier);
       const r = await pool.query(
         `INSERT INTO biens.photos_chambre (chambre_id, url) VALUES ($1, $2) RETURNING id, url`,
         [req.params.id, url]
@@ -733,8 +731,7 @@ router.delete("/photos-chambre/:photoId", async (req, res) => {
     if (!photo) return res.status(404).json({ ok: false, error: "Photo introuvable." });
 
     await pool.query(`DELETE FROM biens.photos_chambre WHERE id = $1`, [photo.id]);
-    // Best-effort : si le fichier a déjà disparu du disque, ce n'est pas grave.
-    fs.unlink(path.join(dossierUploads, path.basename(photo.url)), () => {});
+    supprimerPhoto(photo.url).catch(() => {});
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
