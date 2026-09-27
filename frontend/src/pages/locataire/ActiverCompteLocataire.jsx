@@ -69,7 +69,6 @@ export default function ActiverCompteLocataire() {
                 className={styleEntree}
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
-                placeholder="Ex. 70 12 34 56"
                 autoComplete="off"
                 required
               />
@@ -79,7 +78,6 @@ export default function ActiverCompteLocataire() {
                 className={styleEntree}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="Ex. 123456"
                 inputMode="numeric"
                 autoComplete="off"
                 required
@@ -91,7 +89,6 @@ export default function ActiverCompteLocataire() {
                 type="password"
                 value={motDePasse}
                 onChange={(e) => setMotDePasse(e.target.value)}
-                placeholder="Au moins 6 caractères"
                 autoComplete="new-password"
                 minLength={6}
                 required
@@ -103,7 +100,6 @@ export default function ActiverCompteLocataire() {
                 type="password"
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
-                placeholder="Retape le même mot de passe"
                 autoComplete="new-password"
                 minLength={6}
                 required

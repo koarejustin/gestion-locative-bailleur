@@ -183,7 +183,6 @@ export default function Connexion() {
                       className={styleEntree}
                       value={nomComplet}
                       onChange={(e) => setNomComplet(e.target.value)}
-                      placeholder="Ex. Aminata Ouédraogo"
                       autoComplete="off"
                       required
                     />
@@ -197,7 +196,6 @@ export default function Connexion() {
                 className={styleEntree}
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
-                placeholder="Ex. 70 00 00 00"
                 autoComplete="off"
                 required
               />
@@ -219,7 +217,6 @@ export default function Connexion() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="toi@exemple.com"
                       autoComplete="off"
                     />
                   </Champ>
@@ -233,7 +230,6 @@ export default function Connexion() {
                 type="password"
                 value={motDePasse}
                 onChange={(e) => setMotDePasse(e.target.value)}
-                placeholder="Au moins 6 caractères"
                 autoComplete="new-password"
                 minLength={6}
                 required

@@ -124,7 +124,6 @@ function ChoixEquipements({ suggestions, valeurs, onChange }) {
           className={styleEntree}
           value={nouveau}
           onChange={(e) => setNouveau(e.target.value)}
-          placeholder="Autre équipement..."
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -851,7 +850,6 @@ function QuartierForm({ initial, onAnnuler, onEnregistre }) {
           className={styleEntree}
           value={nom}
           onChange={(e) => setNom(e.target.value)}
-          placeholder="Ex. Gampela"
           autoFocus
           required
         />
@@ -938,7 +936,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
           className={styleEntree}
           value={nom}
           onChange={(e) => setNom(e.target.value)}
-          placeholder="Ex. Cour Zongo"
           autoFocus
           required
         />
@@ -996,7 +993,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
             min="0"
             value={prixMensuel}
             onChange={(e) => setPrixMensuel(e.target.value)}
-            placeholder="Ex. 75000"
             required
           />
           <p className="text-xs text-slate-400 mt-1">
@@ -1031,7 +1027,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
             min="0"
             value={nombreEtages}
             onChange={(e) => setNombreEtages(e.target.value)}
-            placeholder="Ex. 2"
           />
         </Champ>
       </div>
@@ -1040,7 +1035,6 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
           className={styleEntree}
           value={adresse}
           onChange={(e) => setAdresse(e.target.value)}
-          placeholder="Repère, rue, secteur..."
           autoComplete="off"
         />
       </Champ>
@@ -1124,7 +1118,6 @@ function ChambreForm({ maisonId, usageBien, initial, onAnnuler, onEnregistre }) 
           className={styleEntree}
           value={numero}
           onChange={(e) => setNumero(e.target.value)}
-          placeholder="Ex. A1"
           autoFocus
           required
         />
@@ -1136,7 +1129,6 @@ function ChambreForm({ maisonId, usageBien, initial, onAnnuler, onEnregistre }) 
           min="0"
           value={prix}
           onChange={(e) => setPrix(e.target.value)}
-          placeholder="Ex. 25000"
           required
         />
       </Champ>
@@ -1148,7 +1140,6 @@ function ChambreForm({ maisonId, usageBien, initial, onAnnuler, onEnregistre }) 
             min="0"
             value={nombreChambres}
             onChange={(e) => setNombreChambres(e.target.value)}
-            placeholder="Ex. 2"
           />
           <p className="text-xs text-slate-400 mt-1">
             Pièces à coucher dans cette porte — utile si ce n'est pas une simple chambre nue.
@@ -1159,7 +1150,6 @@ function ChambreForm({ maisonId, usageBien, initial, onAnnuler, onEnregistre }) 
             className={styleEntree}
             value={etage}
             onChange={(e) => setEtage(e.target.value)}
-            placeholder="Ex. RDC, 1er étage..."
           />
         </Champ>
       </div>
@@ -1187,7 +1177,6 @@ function ChambreForm({ maisonId, usageBien, initial, onAnnuler, onEnregistre }) 
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder={estCommerce ? "Détails utiles sur la boutique..." : "Détails utiles sur la chambre..."}
         />
       </Champ>
       {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}
@@ -1264,7 +1253,6 @@ function LotChambresForm({ maisonId, usageBien, onAnnuler, onEnregistre }) {
             className={styleEntree}
             value={prefixe}
             onChange={(e) => setPrefixe(e.target.value)}
-            placeholder="Ex. A"
             autoFocus
             required
           />
@@ -1303,7 +1291,6 @@ function LotChambresForm({ maisonId, usageBien, onAnnuler, onEnregistre }) {
           min="0"
           value={prix}
           onChange={(e) => setPrix(e.target.value)}
-          placeholder="Ex. 25000"
           required
         />
       </Champ>
@@ -1315,7 +1302,6 @@ function LotChambresForm({ maisonId, usageBien, onAnnuler, onEnregistre }) {
             min="0"
             value={nombreChambres}
             onChange={(e) => setNombreChambres(e.target.value)}
-            placeholder="Ex. 2"
           />
         </Champ>
         <Champ label="Étage (optionnel)">
@@ -1323,7 +1309,6 @@ function LotChambresForm({ maisonId, usageBien, onAnnuler, onEnregistre }) {
             className={styleEntree}
             value={etage}
             onChange={(e) => setEtage(e.target.value)}
-            placeholder="Ex. RDC, 1er étage..."
           />
         </Champ>
       </div>
@@ -1340,7 +1325,6 @@ function LotChambresForm({ maisonId, usageBien, onAnnuler, onEnregistre }) {
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Détails utiles, communs à toutes ces portes..."
         />
       </Champ>
       {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}

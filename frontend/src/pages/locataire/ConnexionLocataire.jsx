@@ -55,7 +55,6 @@ export default function ConnexionLocataire() {
                 className={styleEntree}
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
-                placeholder="Ex. 70 12 34 56"
                 autoComplete="off"
                 required
               />
@@ -66,7 +65,6 @@ export default function ConnexionLocataire() {
                 type="password"
                 value={motDePasse}
                 onChange={(e) => setMotDePasse(e.target.value)}
-                placeholder="Ton mot de passe"
                 autoComplete="new-password"
                 required
               />

@@ -401,7 +401,6 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
             className={styleEntree}
             value={nomComplet}
             onChange={(e) => setNomComplet(e.target.value)}
-            placeholder="Ex : Awa Ouédraogo"
             autoComplete="off"
             required
           />
@@ -411,7 +410,6 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
             className={styleEntree}
             value={telephone}
             onChange={(e) => setTelephone(e.target.value)}
-            placeholder="Ex : 70 12 34 56"
             autoComplete="off"
             required
           />
@@ -419,7 +417,6 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
         <Champ label="Numéro CNIB (optionnel)">
           <input
             className={styleEntree}
-            placeholder="Ex. B12345678"
             value={pieceIdentite}
             onChange={(e) => setPieceIdentite(e.target.value)}
             autoComplete="off"

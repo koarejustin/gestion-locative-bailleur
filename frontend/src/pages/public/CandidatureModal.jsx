@@ -157,7 +157,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={nomComplet}
               onChange={(e) => setNomComplet(e.target.value)}
-              placeholder="Ex. Awa Ouédraogo"
               autoComplete="off"
               autoFocus
               required
@@ -168,7 +167,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={telephone}
               onChange={(e) => setTelephone(e.target.value)}
-              placeholder="Ex. 70 12 34 56"
               autoComplete="off"
               required
             />
@@ -179,7 +177,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="toi@example.com"
               autoComplete="off"
               required
             />
@@ -189,7 +186,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={cnib}
               onChange={(e) => setCnib(e.target.value)}
-              placeholder="Ex. B12345678"
               autoComplete="off"
             />
           </Champ>
@@ -225,7 +221,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Ex. 123456"
               inputMode="numeric"
               autoComplete="off"
               autoFocus
@@ -278,7 +273,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               type="password"
               value={motDePasse}
               onChange={(e) => setMotDePasse(e.target.value)}
-              placeholder="Au moins 6 caractères"
               autoComplete="new-password"
               minLength={6}
               required
@@ -290,7 +284,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               type="password"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
-              placeholder="Retape le même mot de passe"
               autoComplete="new-password"
               minLength={6}
               required
@@ -301,7 +294,6 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={nomSignature}
               onChange={(e) => setNomSignature(e.target.value)}
-              placeholder={nomComplet || "Ton nom complet"}
               autoComplete="off"
               required
             />
