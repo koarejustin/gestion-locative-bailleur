@@ -11,15 +11,15 @@ function formaterFcfa(montant) {
 
 const TITRES_ETAPE = {
   identite: "Ça m'intéresse",
-  code: "Vérifie ton email",
   signature: "Signature du contrat",
   succes: "Contrat signé !",
 };
 
-// Petit assistant en 3 étapes : identité -> code reçu par email -> signature
-// électronique (nom tapé + case d'acceptation + mot de passe pour l'espace
-// locataire). La signature crée directement le compte + le contrat, et
-// connecte automatiquement le nouveau locataire.
+// Petit assistant en 2 étapes : identité -> signature électronique (nom
+// tapé + case d'acceptation + mot de passe pour l'espace locataire). La
+// signature crée directement le compte + le contrat, et connecte
+// automatiquement le nouveau locataire. Pas de vérification par email/SMS
+// pour l'instant.
 export default function CandidatureModal({ unite, onFermer }) {
   const [etape, setEtape] = useState("identite");
   const [candidatureId, setCandidatureId] = useState(null);
@@ -32,8 +32,6 @@ export default function CandidatureModal({ unite, onFermer }) {
   const [email, setEmail] = useState("");
   const [cnib, setCnib] = useState("");
   const [dateDebut, setDateDebut] = useState("");
-
-  const [code, setCode] = useState("");
 
   const [motDePasse, setMotDePasse] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -54,7 +52,6 @@ export default function CandidatureModal({ unite, onFermer }) {
     setEmail("");
     setCnib("");
     setDateDebut("");
-    setCode("");
     setMotDePasse("");
     setConfirmation("");
     setNomSignature("");
@@ -76,38 +73,11 @@ export default function CandidatureModal({ unite, onFermer }) {
         chambre_id: unite.chambre.id,
         nom_complet: nomComplet,
         telephone,
-        email,
+        email: email || undefined,
         piece_identite_num: cnib || undefined,
         date_debut_souhaitee: dateDebut || undefined,
       });
       setCandidatureId(data.candidature_id);
-      setEtape("code");
-    } catch (err) {
-      gererErreur(err);
-    } finally {
-      setEnCours(false);
-    }
-  }
-
-  async function renvoyerCode() {
-    setErreur("");
-    setEnCours(true);
-    try {
-      await api.post(`/public/candidatures/${candidatureId}/renvoyer-code`);
-      setErreur("");
-    } catch (err) {
-      gererErreur(err);
-    } finally {
-      setEnCours(false);
-    }
-  }
-
-  async function soumettreCode(e) {
-    e.preventDefault();
-    setErreur("");
-    setEnCours(true);
-    try {
-      const { data } = await api.post(`/public/candidatures/${candidatureId}/verifier`, { code });
       setRecap(data.recap);
       setEtape("signature");
     } catch (err) {
@@ -157,7 +127,7 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={nomComplet}
               onChange={(e) => setNomComplet(e.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
               autoFocus
               required
             />
@@ -167,18 +137,17 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={telephone}
               onChange={(e) => setTelephone(e.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
               required
             />
           </Champ>
-          <Champ label="Email (pour recevoir le code de vérification)">
+          <Champ label="Email (optionnel)">
             <input
               className={styleEntree}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="off"
-              required
+              autoComplete="new-password"
             />
           </Champ>
           <Champ label="Numéro CNIB (optionnel)">
@@ -186,7 +155,7 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={cnib}
               onChange={(e) => setCnib(e.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
             />
           </Champ>
           <Champ label="Date d'entrée souhaitée (optionnel)">
@@ -206,45 +175,6 @@ export default function CandidatureModal({ unite, onFermer }) {
             </button>
             <button type="submit" className={styleBoutonPrimaire} disabled={enCours}>
               {enCours ? "Envoi..." : "Continuer"}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {etape === "code" && (
-        <form onSubmit={soumettreCode}>
-          <p className="text-sm text-slate-600 mb-3">
-            Un code à 6 chiffres vient d'être envoyé à <strong>{email}</strong>.
-          </p>
-          <Champ label="Code reçu par email">
-            <input
-              className={styleEntree}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              inputMode="numeric"
-              autoComplete="off"
-              autoFocus
-              required
-            />
-          </Champ>
-
-          {erreur && <p className="text-xs text-rose-600 mb-3">{erreur}</p>}
-
-          <button
-            type="button"
-            onClick={renvoyerCode}
-            className="text-xs font-medium text-slate-500 hover:text-[#1F3A5F] mb-3"
-            disabled={enCours}
-          >
-            Je n'ai rien reçu — renvoyer le code
-          </button>
-
-          <div className="flex justify-end gap-2 mt-1">
-            <button type="button" className={styleBoutonSecondaire} onClick={onFermer}>
-              Annuler
-            </button>
-            <button type="submit" className={styleBoutonPrimaire} disabled={enCours}>
-              {enCours ? "Vérification..." : "Confirmer"}
             </button>
           </div>
         </form>
@@ -294,7 +224,7 @@ export default function CandidatureModal({ unite, onFermer }) {
               className={styleEntree}
               value={nomSignature}
               onChange={(e) => setNomSignature(e.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
               required
             />
           </Champ>

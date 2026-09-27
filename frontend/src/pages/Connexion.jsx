@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import Champ, { styleEntree, styleBoutonPrimaire } from "../components/ui/Champ.jsx";
@@ -273,17 +273,6 @@ export default function Connexion() {
                 </motion.span>
               </AnimatePresence>
             </motion.button>
-
-            {mode === "connexion" && (
-              <div className="text-center mt-4">
-                <Link
-                  to="/mot-de-passe-oublie"
-                  className="text-xs font-medium text-slate-500 hover:text-[#1F3A5F] transition-colors"
-                >
-                  Mot de passe oublié ?
-                </Link>
-              </div>
-            )}
           </motion.form>
         </motion.div>
       </motion.div>

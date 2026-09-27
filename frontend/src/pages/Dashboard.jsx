@@ -20,38 +20,6 @@ export default function Dashboard() {
   });
   const [erreur, setErreur] = useState("");
 
-  function cleBanniereMasquee() {
-    return `banniere-email-masquee-${bailleur?.id}`;
-  }
-  function banniereDejaMasquee() {
-    try {
-      return localStorage.getItem(cleBanniereMasquee()) === "1";
-    } catch {
-      return false;
-    }
-  }
-
-  const [banniereEmail, setBanniereEmail] = useState(
-    bailleur?.email && !bailleur?.email_verifie && !banniereDejaMasquee() ? "a_verifier" : null
-  );
-
-  function renvoyerVerification() {
-    setBanniereEmail("envoi_en_cours");
-    api
-      .post("/auth/renvoyer-verification")
-      .then(() => setBanniereEmail("envoye"))
-      .catch(() => setBanniereEmail("erreur"));
-  }
-
-  function masquerBanniere() {
-    try {
-      localStorage.setItem(cleBanniereMasquee(), "1");
-    } catch {
-      // localStorage indisponible : la bannière réapparaîtra simplement au prochain chargement.
-    }
-    setBanniereEmail(null);
-  }
-
   useEffect(() => {
     let annule = false;
 
@@ -101,41 +69,6 @@ export default function Dashboard() {
       {erreur && (
         <Card className="border-rose-200 bg-rose-50">
           <p className="text-sm text-rose-700">{erreur}</p>
-        </Card>
-      )}
-
-      {banniereEmail && banniereEmail !== "envoye" && (
-        <Card className="border-amber-200 bg-amber-50">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-sm text-amber-800">
-              {banniereEmail === "erreur"
-                ? "L'envoi a échoué, réessaie dans un instant."
-                : `Ton adresse email (${bailleur.email}) n'est pas encore vérifiée. Vérifie-la pour pouvoir récupérer ton mot de passe par email.`}
-            </p>
-            <div className="flex items-center gap-3 whitespace-nowrap">
-              <button
-                onClick={renvoyerVerification}
-                disabled={banniereEmail === "envoi_en_cours"}
-                className="text-xs font-medium text-amber-800 underline hover:no-underline disabled:opacity-50"
-              >
-                {banniereEmail === "envoi_en_cours" ? "Envoi..." : "Renvoyer l'email de vérification"}
-              </button>
-              <button
-                onClick={masquerBanniere}
-                title="Ne plus afficher"
-                className="text-amber-800/60 hover:text-amber-800 text-sm leading-none px-1"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
-      {banniereEmail === "envoye" && (
-        <Card className="border-emerald-200 bg-emerald-50">
-          <p className="text-sm text-emerald-800">
-            Email de vérification renvoyé — pense à vérifier tes spams.
-          </p>
         </Card>
       )}
 

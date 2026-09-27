@@ -445,7 +445,7 @@ function FormulairePaiement({ echeance, mois, onFermer, onEnregistre }) {
               className={styleEntree}
               value={reference}
               onChange={(e) => setReference(e.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
             />
           </Champ>
         )}

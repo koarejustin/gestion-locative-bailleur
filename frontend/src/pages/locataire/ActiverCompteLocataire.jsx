@@ -69,7 +69,7 @@ export default function ActiverCompteLocataire() {
                 className={styleEntree}
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
-                autoComplete="off"
+                autoComplete="new-password"
                 required
               />
             </Champ>
@@ -79,7 +79,7 @@ export default function ActiverCompteLocataire() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 inputMode="numeric"
-                autoComplete="off"
+                autoComplete="new-password"
                 required
               />
             </Champ>

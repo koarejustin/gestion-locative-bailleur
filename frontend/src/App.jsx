@@ -3,8 +3,6 @@ import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
 import { AuthProviderLocataire, useAuthLocataire } from "./auth/AuthContextLocataire.jsx";
 import Layout from "./components/layout/Layout.jsx";
 import Connexion from "./pages/Connexion.jsx";
-import MotDePasseOublie from "./pages/MotDePasseOublie.jsx";
-import VerifierEmail from "./pages/VerifierEmail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Biens from "./pages/Biens.jsx";
 import Locataires from "./pages/Locataires.jsx";
@@ -50,8 +48,6 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/connexion" element={<Connexion />} />
-            <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
-            <Route path="/verifier-email" element={<VerifierEmail />} />
             <Route
               path="/"
               element={

@@ -1,28 +1,13 @@
 const express = require("express");
-const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const pool = require("../config/db");
-const { envoyerEmailVerification, envoyerMotDePasseTemporaire } = require("../services/email");
 const authentifier = require("../middleware/auth");
 const { genererJetonBailleur, genererJetonLocataire } = require("../services/jetons");
 const { upload, dossierUploads } = require("../middleware/upload");
 
 const router = express.Router();
-
-const DUREE_TOKEN_VERIFICATION_MS = 24 * 60 * 60 * 1000; // 24h
-const DELAI_MIN_ENTRE_DEMANDES_MS = 2 * 60 * 1000; // anti-spam : 2 min entre deux demandes de reset
-
-function genererMotDePasseTemporaire() {
-  // Lisible à l'oral/à la main (pas de 0/O/1/l ambigus), assez long pour être sûr.
-  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let motDePasse = "";
-  for (let i = 0; i < 10; i++) {
-    motDePasse += alphabet[crypto.randomInt(alphabet.length)];
-  }
-  return motDePasse;
-}
 
 // Cette application est prévue pour un seul bailleur par déploiement (pas
 // multi-tenant) : une fois qu'un compte existe, l'inscription publique est
@@ -74,14 +59,6 @@ router.post("/inscription", async (req, res) => {
     );
     const bailleur = resultat.rows[0];
 
-    if (bailleur.email) {
-      // On ne bloque jamais l'inscription si l'envoi d'email échoue —
-      // le compte reste utilisable par téléphone + mot de passe dans tous les cas.
-      envoyerJetonVerification(bailleur).catch((err) =>
-        console.error("Échec envoi email de vérification :", err.message)
-      );
-    }
-
     res.status(201).json({ ok: true, jeton: genererJetonBailleur(bailleur), bailleur });
   } catch (err) {
     if (err.code === "23505") {
@@ -93,27 +70,6 @@ router.post("/inscription", async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-
-// Génère un jeton de vérification, le sauvegarde (haché) et envoie l'email.
-async function envoyerJetonVerification(bailleur) {
-  const token = crypto.randomBytes(32).toString("hex");
-  const tokenHash = await bcrypt.hash(token, 10);
-  const expire = new Date(Date.now() + DUREE_TOKEN_VERIFICATION_MS);
-
-  await pool.query(
-    `UPDATE comptes.bailleurs
-     SET verification_token_hash = $1, verification_token_expire = $2
-     WHERE id = $3`,
-    [tokenHash, expire, bailleur.id]
-  );
-
-  await envoyerEmailVerification({
-    email: bailleur.email,
-    bailleurId: bailleur.id,
-    nomComplet: bailleur.nom_complet,
-    token,
-  });
-}
 
 // Connexion avec téléphone + mot de passe
 router.post("/connexion", async (req, res) => {
@@ -141,127 +97,6 @@ router.post("/connexion", async (req, res) => {
 
     delete bailleur.mot_de_passe_hash;
     res.json({ ok: true, jeton: genererJetonBailleur(bailleur), bailleur });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-// Vérification d'email : lien cliqué depuis l'email reçu à l'inscription.
-router.post("/verifier-email", async (req, res) => {
-  const { id, token } = req.body;
-  if (!id || !token) {
-    return res.status(400).json({ ok: false, error: "Lien de vérification invalide." });
-  }
-
-  try {
-    const r = await pool.query(
-      `SELECT id, verification_token_hash, verification_token_expire, email_verifie
-       FROM comptes.bailleurs WHERE id = $1`,
-      [id]
-    );
-    const bailleur = r.rows[0];
-    if (!bailleur || !bailleur.verification_token_hash) {
-      return res.status(400).json({ ok: false, error: "Lien de vérification invalide ou déjà utilisé." });
-    }
-    if (bailleur.email_verifie) {
-      return res.json({ ok: true, deja_verifie: true });
-    }
-    if (new Date(bailleur.verification_token_expire) < new Date()) {
-      return res.status(400).json({
-        ok: false,
-        error: "Ce lien a expiré. Reconnecte-toi puis demande un nouvel email de vérification.",
-      });
-    }
-    const valide = await bcrypt.compare(token, bailleur.verification_token_hash);
-    if (!valide) {
-      return res.status(400).json({ ok: false, error: "Lien de vérification invalide ou déjà utilisé." });
-    }
-
-    await pool.query(
-      `UPDATE comptes.bailleurs
-       SET email_verifie = true, verification_token_hash = NULL, verification_token_expire = NULL
-       WHERE id = $1`,
-      [id]
-    );
-    res.json({ ok: true, deja_verifie: false });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-// Renvoyer l'email de vérification (bailleur déjà connecté, ex. premier email perdu).
-router.post("/renvoyer-verification", authentifier, async (req, res) => {
-  try {
-    const r = await pool.query(
-      `SELECT id, nom_complet, email, email_verifie FROM comptes.bailleurs WHERE id = $1`,
-      [req.bailleurId]
-    );
-    const bailleur = r.rows[0];
-    if (!bailleur || !bailleur.email) {
-      return res.status(400).json({ ok: false, error: "Aucun email enregistré sur ce compte." });
-    }
-    if (bailleur.email_verifie) {
-      return res.json({ ok: true, deja_verifie: true });
-    }
-    await envoyerJetonVerification(bailleur);
-    res.json({ ok: true, deja_verifie: false });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-// Mot de passe oublié : envoie un nouveau mot de passe temporaire par email.
-// Ne révèle jamais si l'email existe ou non côté réponse (message générique),
-// pour éviter qu'on devine quels emails sont enregistrés.
-router.post("/mot-de-passe-oublie", async (req, res) => {
-  const { email } = req.body;
-  const messageGenerique = {
-    ok: true,
-    message:
-      "Si un compte vérifié correspond à cet email, un nouveau mot de passe vient d'y être envoyé.",
-  };
-
-  if (!email || !email.trim()) {
-    return res.status(400).json({ ok: false, error: "Email requis." });
-  }
-
-  try {
-    const r = await pool.query(
-      `SELECT id, nom_complet, email, email_verifie, reinitialisation_demandee_le
-       FROM comptes.bailleurs WHERE LOWER(email) = LOWER($1)`,
-      [email.trim()]
-    );
-    const bailleur = r.rows[0];
-
-    // Compte introuvable, ou email pas encore vérifié : on répond quand même
-    // avec le message générique (rien à faire de plus côté serveur).
-    if (!bailleur || !bailleur.email_verifie) {
-      return res.json(messageGenerique);
-    }
-
-    if (
-      bailleur.reinitialisation_demandee_le &&
-      Date.now() - new Date(bailleur.reinitialisation_demandee_le).getTime() < DELAI_MIN_ENTRE_DEMANDES_MS
-    ) {
-      return res.json(messageGenerique);
-    }
-
-    const motDePasseTemporaire = genererMotDePasseTemporaire();
-    const hash = await bcrypt.hash(motDePasseTemporaire, 10);
-    await pool.query(
-      `UPDATE comptes.bailleurs
-       SET mot_de_passe_hash = $1, reinitialisation_demandee_le = NOW()
-       WHERE id = $2`,
-      [hash, bailleur.id]
-    );
-
-    await envoyerMotDePasseTemporaire({
-      email: bailleur.email,
-      nomComplet: bailleur.nom_complet,
-      motDePasseTemporaire,
-    });
-
-    res.json(messageGenerique);
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

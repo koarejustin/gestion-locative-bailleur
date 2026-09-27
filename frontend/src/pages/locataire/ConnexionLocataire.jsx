@@ -55,7 +55,7 @@ export default function ConnexionLocataire() {
                 className={styleEntree}
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
-                autoComplete="off"
+                autoComplete="new-password"
                 required
               />
             </Champ>

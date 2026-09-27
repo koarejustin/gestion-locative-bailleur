@@ -1,20 +1,20 @@
 const express = require("express");
-const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const pool = require("../config/db");
 const { validerCnib } = require("../services/validation");
-const { envoyerCodeVerificationCandidature, envoyerConfirmationSignature } = require("../services/email");
+const { envoyerConfirmationSignature } = require("../services/email");
 const { genererJetonLocataire } = require("../services/jetons");
 
 const router = express.Router();
 
 // --- Routes publiques : aucune connexion requise. Un prospect consulte les ---
-// unités libres, candidate, confirme son email (code à usage unique — pas de
-// SMS payant pour l'instant), puis signe électroniquement : ça crée
-// directement son compte locataire + son contrat, exactement comme si le
-// bailleur l'avait fait à la main.
+// unités libres, candidate (identité + optionnellement un email de contact),
+// puis signe électroniquement directement : ça crée son compte locataire +
+// son contrat, exactement comme si le bailleur l'avait fait à la main.
+// Pas de vérification par email/SMS pour l'instant — l'envoi d'emails
+// n'étant pas fiable à ce stade, on ne bloque pas une vraie candidature
+// derrière une étape qui peut échouer silencieusement.
 
-const DUREE_CODE_VERIFICATION_MS = 15 * 60 * 1000; // 15 min
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // --- Vitrine : unités libres, avec filtres optionnels ---
@@ -150,22 +150,19 @@ router.get("/chambres/:id", async (req, res) => {
   });
 });
 
-// --- Candidature : étape 1 — identité + email à confirmer ---
-
-function genererCode() {
-  return String(crypto.randomInt(100000, 999999));
-}
+// --- Candidature : étape 1 — identité, puis passage direct à la signature ---
+// (pas de vérification par email : voir la note en haut du fichier)
 
 router.post("/candidatures", async (req, res) => {
   const { chambre_id, nom_complet, telephone, email, piece_identite_num, date_debut_souhaitee } = req.body;
 
-  if (!chambre_id || !nom_complet?.trim() || !telephone?.trim() || !email?.trim()) {
+  if (!chambre_id || !nom_complet?.trim() || !telephone?.trim()) {
     return res.status(400).json({
       ok: false,
-      error: "Unité, nom complet, téléphone et email sont obligatoires.",
+      error: "Unité, nom complet et téléphone sont obligatoires.",
     });
   }
-  if (!REGEX_EMAIL.test(email.trim())) {
+  if (email?.trim() && !REGEX_EMAIL.test(email.trim())) {
     return res.status(400).json({ ok: false, error: "Adresse email invalide." });
   }
   const cnib = validerCnib(piece_identite_num);
@@ -177,9 +174,6 @@ router.post("/candidatures", async (req, res) => {
   }
 
   try {
-    const code = genererCode();
-    const codeHash = await bcrypt.hash(code, 10);
-    const expire = new Date(Date.now() + DUREE_CODE_VERIFICATION_MS);
     // Caution par défaut : un mois de loyer (règle la plus courante) — le
     // bailleur peut toujours l'ajuster ensuite comme pour un contrat manuel.
     const cautionMontant = Number(unite.prix_mensuel);
@@ -187,27 +181,32 @@ router.post("/candidatures", async (req, res) => {
     const r = await pool.query(
       `INSERT INTO location.candidatures
          (chambre_id, nom_complet, telephone, email, piece_identite_num,
-          loyer_mensuel, caution_montant, date_debut_souhaitee,
-          code_verification_hash, code_verification_expire)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          loyer_mensuel, caution_montant, date_debut_souhaitee, statut, email_verifie_le)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'email_verifie', now())
        RETURNING id`,
       [
         chambre_id,
         nom_complet.trim(),
         telephone.trim(),
-        email.trim(),
+        email?.trim() || null,
         cnib.valeur,
         unite.prix_mensuel,
         cautionMontant,
         date_debut_souhaitee || null,
-        codeHash,
-        expire,
       ]
     );
 
-    await envoyerCodeVerificationCandidature({ email: email.trim(), nomComplet: nom_complet.trim(), code });
-
-    res.status(201).json({ ok: true, candidature_id: r.rows[0].id });
+    res.status(201).json({
+      ok: true,
+      candidature_id: r.rows[0].id,
+      recap: {
+        maison_nom: unite.maison_nom,
+        numero_porte: unite.numero_porte,
+        quartier_nom: unite.quartier_nom,
+        loyer_mensuel: Number(unite.prix_mensuel),
+        caution_montant: cautionMontant,
+      },
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -223,88 +222,6 @@ async function trouverCandidature(id) {
   );
   return r.rows[0] || null;
 }
-
-// Renvoyer le code (email non reçu, faute de frappe...) — régénère un
-// nouveau code tant que la candidature n'est pas déjà signée.
-router.post("/candidatures/:id/renvoyer-code", async (req, res) => {
-  const candidature = await trouverCandidature(req.params.id);
-  if (!candidature) return res.status(404).json({ ok: false, error: "Candidature introuvable." });
-  if (candidature.statut === "signee") {
-    return res.status(409).json({ ok: false, error: "Cette candidature a déjà été signée." });
-  }
-
-  try {
-    const code = genererCode();
-    const codeHash = await bcrypt.hash(code, 10);
-    const expire = new Date(Date.now() + DUREE_CODE_VERIFICATION_MS);
-
-    await pool.query(
-      `UPDATE location.candidatures
-       SET code_verification_hash = $1, code_verification_expire = $2, statut = 'email_a_verifier'
-       WHERE id = $3`,
-      [codeHash, expire, req.params.id]
-    );
-
-    await envoyerCodeVerificationCandidature({
-      email: candidature.email,
-      nomComplet: candidature.nom_complet,
-      code,
-    });
-
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-// --- Candidature : étape 2 — confirmation du code reçu par email ---
-
-router.post("/candidatures/:id/verifier", async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ ok: false, error: "Code requis." });
-
-  const candidature = await trouverCandidature(req.params.id);
-  if (!candidature) return res.status(404).json({ ok: false, error: "Candidature introuvable." });
-  if (candidature.statut === "signee") {
-    return res.status(409).json({ ok: false, error: "Cette candidature a déjà été signée." });
-  }
-  if (!candidature.code_verification_hash || new Date(candidature.code_verification_expire) < new Date()) {
-    return res.status(400).json({
-      ok: false,
-      error: "Ce code a expiré. Demande-en un nouveau.",
-    });
-  }
-  const valide = await bcrypt.compare(String(code), candidature.code_verification_hash);
-  if (!valide) {
-    return res.status(400).json({ ok: false, error: "Code incorrect." });
-  }
-  if (candidature.chambre_statut !== "libre") {
-    return res.status(409).json({ ok: false, error: "Cette unité n'est plus disponible." });
-  }
-
-  try {
-    await pool.query(
-      `UPDATE location.candidatures
-       SET statut = 'email_verifie', email_verifie_le = now()
-       WHERE id = $1`,
-      [req.params.id]
-    );
-
-    const unite = await trouverUniteLibre(candidature.chambre_id);
-    res.json({
-      ok: true,
-      recap: {
-        maison_nom: unite.maison_nom,
-        numero_porte: unite.numero_porte,
-        quartier_nom: unite.quartier_nom,
-        loyer_mensuel: Number(candidature.loyer_mensuel),
-        caution_montant: Number(candidature.caution_montant),
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
 
 // --- Candidature : étape 3 — signature électronique ---
 // Preuve = email confirmé + nom tapé + case d'acceptation + horodatage + IP.
@@ -334,7 +251,7 @@ router.post("/candidatures/:id/signer", async (req, res) => {
     return res.status(409).json({ ok: false, error: "Cette candidature a déjà été signée." });
   }
   if (candidature.statut !== "email_verifie") {
-    return res.status(409).json({ ok: false, error: "Merci de d'abord confirmer ton email." });
+    return res.status(409).json({ ok: false, error: "Cette candidature n'est pas prête à être signée." });
   }
 
   const unite = await trouverUniteLibre(candidature.chambre_id);
@@ -380,13 +297,17 @@ router.post("/candidatures/:id/signer", async (req, res) => {
 
     await client.query("COMMIT");
 
-    envoyerConfirmationSignature({
-      email: candidature.email,
-      nomComplet: candidature.nom_complet,
-      logement: `${unite.maison_nom} — Porte ${unite.numero_porte} (${unite.quartier_nom})`,
-      loyerMensuel: Number(candidature.loyer_mensuel),
-      cautionMontant: Number(candidature.caution_montant),
-    }).catch((err) => console.error("Échec envoi email de confirmation de signature :", err.message));
+    // Email de contact optionnel : on tente une confirmation si présente,
+    // sans jamais bloquer la signature si l'envoi échoue ou n'est pas fourni.
+    if (candidature.email) {
+      envoyerConfirmationSignature({
+        email: candidature.email,
+        nomComplet: candidature.nom_complet,
+        logement: `${unite.maison_nom} — Porte ${unite.numero_porte} (${unite.quartier_nom})`,
+        loyerMensuel: Number(candidature.loyer_mensuel),
+        cautionMontant: Number(candidature.caution_montant),
+      }).catch((err) => console.error("Échec envoi email de confirmation de signature :", err.message));
+    }
 
     res.status(201).json({
       ok: true,

@@ -1035,7 +1035,7 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
           className={styleEntree}
           value={adresse}
           onChange={(e) => setAdresse(e.target.value)}
-          autoComplete="off"
+          autoComplete="new-password"
         />
       </Champ>
       <ChampEquipements label="Équipements de la maison/cour (optionnel)">

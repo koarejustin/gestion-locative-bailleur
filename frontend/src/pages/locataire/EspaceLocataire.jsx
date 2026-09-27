@@ -440,7 +440,7 @@ function DeclarerPaiementModal({ onFermer, onEnregistre }) {
                 className={styleEntree}
                 value={numeroExpediteur}
                 onChange={(e) => setNumeroExpediteur(e.target.value)}
-                autoComplete="off"
+                autoComplete="new-password"
               />
             </Champ>
           )}
@@ -449,7 +449,7 @@ function DeclarerPaiementModal({ onFermer, onEnregistre }) {
               className={styleEntree}
               value={referenceTransaction}
               onChange={(e) => setReferenceTransaction(e.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
             />
           </Champ>
 
