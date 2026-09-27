@@ -402,6 +402,7 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
             value={nomComplet}
             onChange={(e) => setNomComplet(e.target.value)}
             placeholder="Ex : Awa Ouédraogo"
+            autoComplete="off"
             required
           />
         </Champ>
@@ -411,6 +412,7 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
             value={telephone}
             onChange={(e) => setTelephone(e.target.value)}
             placeholder="Ex : 70 12 34 56"
+            autoComplete="off"
             required
           />
         </Champ>
@@ -420,6 +422,7 @@ function FormulaireLocataire({ locataire, onFermer, onEnregistre }) {
             placeholder="Ex. B12345678"
             value={pieceIdentite}
             onChange={(e) => setPieceIdentite(e.target.value)}
+            autoComplete="off"
           />
           <p className="text-xs text-slate-400 mt-1">
             Une lettre suivie de 8 chiffres, comme imprimé sur la carte CNIB.

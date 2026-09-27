@@ -1041,6 +1041,7 @@ function MaisonForm({ quartierId, initial, onAnnuler, onEnregistre, onPhotosChan
           value={adresse}
           onChange={(e) => setAdresse(e.target.value)}
           placeholder="Repère, rue, secteur..."
+          autoComplete="off"
         />
       </Champ>
       <ChampEquipements label="Équipements de la maison/cour (optionnel)">

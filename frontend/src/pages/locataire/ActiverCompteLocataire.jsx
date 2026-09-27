@@ -70,6 +70,7 @@ export default function ActiverCompteLocataire() {
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
                 placeholder="Ex. 70 12 34 56"
+                autoComplete="off"
                 required
               />
             </Champ>
@@ -80,6 +81,7 @@ export default function ActiverCompteLocataire() {
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="Ex. 123456"
                 inputMode="numeric"
+                autoComplete="off"
                 required
               />
             </Champ>
@@ -90,6 +92,7 @@ export default function ActiverCompteLocataire() {
                 value={motDePasse}
                 onChange={(e) => setMotDePasse(e.target.value)}
                 placeholder="Au moins 6 caractères"
+                autoComplete="new-password"
                 minLength={6}
                 required
               />
@@ -101,6 +104,7 @@ export default function ActiverCompteLocataire() {
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
                 placeholder="Retape le même mot de passe"
+                autoComplete="new-password"
                 minLength={6}
                 required
               />

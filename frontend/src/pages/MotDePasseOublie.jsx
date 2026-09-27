@@ -58,6 +58,7 @@ export default function MotDePasseOublie() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="toi@exemple.com"
+                  autoComplete="off"
                   required
                 />
               </Champ>

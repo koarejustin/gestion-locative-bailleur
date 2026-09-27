@@ -442,6 +442,7 @@ function DeclarerPaiementModal({ onFermer, onEnregistre }) {
                 value={numeroExpediteur}
                 onChange={(e) => setNumeroExpediteur(e.target.value)}
                 placeholder="Ex. 70 12 34 56"
+                autoComplete="off"
               />
             </Champ>
           )}
@@ -451,6 +452,7 @@ function DeclarerPaiementModal({ onFermer, onEnregistre }) {
               value={referenceTransaction}
               onChange={(e) => setReferenceTransaction(e.target.value)}
               placeholder="Ex. code reçu par SMS de l'opérateur"
+              autoComplete="off"
             />
           </Champ>
 
