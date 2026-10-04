@@ -45,6 +45,33 @@ async function televerserPhoto(fichier) {
   return data.publicUrl;
 }
 
+// Même principe pour les reçus PDF (voir services/recus.js), rangés sous un
+// préfixe "recus/" dans le même bucket — pas besoin d'en créer un second.
+// Contrairement aux photos, un reçu est régénéré sous le même nom de
+// fichier à chaque appel (ex. un versement suivant change le "reste à
+// payer" affiché dessus), donc on écrase l'ancien (upsert).
+const PREFIXE_RECUS = "recus";
+
+async function televerserRecu(buffer, nomFichier) {
+  if (!supabase) {
+    const dossierRecusLocal = path.join(dossierUploads, PREFIXE_RECUS);
+    if (!fs.existsSync(dossierRecusLocal)) fs.mkdirSync(dossierRecusLocal, { recursive: true });
+    fs.writeFileSync(path.join(dossierRecusLocal, nomFichier), buffer);
+    return `/uploads/${PREFIXE_RECUS}/${nomFichier}`;
+  }
+
+  const chemin = `${PREFIXE_RECUS}/${nomFichier}`;
+  const { error } = await supabase.storage
+    .from(NOM_BUCKET)
+    .upload(chemin, buffer, { contentType: "application/pdf", upsert: true });
+  if (error) {
+    throw new Error(`Envoi du reçu impossible : ${error.message}`);
+  }
+
+  const { data } = supabase.storage.from(NOM_BUCKET).getPublicUrl(chemin);
+  return data.publicUrl;
+}
+
 // Best-effort : si le fichier a déjà disparu (ou n'a jamais existé), ce
 // n'est pas grave, on ne bloque jamais l'appelant pour ça.
 async function supprimerPhoto(url) {
@@ -64,4 +91,4 @@ async function supprimerPhoto(url) {
   }
 }
 
-module.exports = { televerserPhoto, supprimerPhoto };
+module.exports = { televerserPhoto, supprimerPhoto, televerserRecu };

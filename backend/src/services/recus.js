@@ -1,9 +1,5 @@
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
-
-const DOSSIER_RECUS = path.join(__dirname, "..", "..", "uploads", "recus");
-if (!fs.existsSync(DOSSIER_RECUS)) fs.mkdirSync(DOSSIER_RECUS, { recursive: true });
+const { televerserRecu } = require("./stockage");
 
 const METHODE_LABEL = {
   orange_money: "Orange Money",
@@ -40,24 +36,22 @@ function nomFichierRecu(versementId) {
   return `recu-${versementId}.pdf`;
 }
 
-function cheminRecu(versementId) {
-  return path.join(DOSSIER_RECUS, nomFichierRecu(versementId));
-}
-
-function urlRecu(versementId) {
-  return `/uploads/recus/${nomFichierRecu(versementId)}`;
-}
-
-// Construit le PDF du reçu et le sauvegarde sur disque. Régénéré à chaque
-// appel (les infos peuvent changer, ex. un versement suivant modifie le
+// Construit le PDF du reçu en mémoire puis l'envoie vers le stockage
+// (Supabase Storage en production, disque local en développement — voir
+// services/stockage.js). Régénéré à chaque appel sous le même nom de
+// fichier (les infos peuvent changer, ex. un versement suivant modifie le
 // "reste à payer" affiché) — pdfkit est largement assez rapide pour ça.
 function genererRecuPdf(donnees) {
   const { versement, bailleur, locataire, chambre, echeance } = donnees;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A5", margin: 40 });
-    const flux = fs.createWriteStream(cheminRecu(versement.id));
-    doc.pipe(flux);
+    const morceaux = [];
+    doc.on("data", (chunk) => morceaux.push(chunk));
+    doc.on("error", reject);
+    doc.on("end", () => {
+      televerserRecu(Buffer.concat(morceaux), nomFichierRecu(versement.id)).then(resolve, reject);
+    });
 
     doc.fontSize(18).fillColor("#1F3A5F").text("Reçu de paiement", { align: "center" });
     doc.moveDown(0.3);
@@ -108,8 +102,6 @@ function genererRecuPdf(donnees) {
       });
 
     doc.end();
-    flux.on("finish", () => resolve(urlRecu(versement.id)));
-    flux.on("error", reject);
   });
 }
 
@@ -122,4 +114,4 @@ function ligneSeparation(doc) {
   doc.moveDown(0.8);
 }
 
-module.exports = { genererRecuPdf, urlRecu };
+module.exports = { genererRecuPdf };
